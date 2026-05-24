@@ -1,3 +1,0 @@
-2026-01-05 23:11:18.991 +05:30 [WRN] Failed to determine the https port for redirect.
-2026-01-05 23:11:19.131 +05:30 [INF] Request: GET /swagger
-2026-01-05 23:11:19.138 +05:30 [INF] Request: GET /swagger - Status: 404 - Duration: 174ms

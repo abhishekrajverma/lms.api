@@ -1,8 +1,0 @@
-2026-01-12 13:55:24.693 -08:00 [WRN] Failed to determine the https port for redirect.
-2026-01-12 13:55:24.751 -08:00 [INF] Request: GET / - Status: 301 - Duration: 61ms
-2026-01-12 13:55:24.879 -08:00 [INF] Request: GET /index.html - Status: 200 - Duration: 93ms
-2026-01-12 13:55:24.918 -08:00 [INF] Request: GET /swagger-ui.css - Status: 200 - Duration: 29ms
-2026-01-12 13:55:24.936 -08:00 [INF] Request: GET /swagger-ui-standalone-preset.js - Status: 200 - Duration: 45ms
-2026-01-12 13:55:24.947 -08:00 [INF] Request: GET /swagger-ui-bundle.js - Status: 200 - Duration: 57ms
-2026-01-12 13:55:25.148 -08:00 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 22ms
-2026-01-12 13:55:25.148 -08:00 [INF] Request: GET /favicon-32x32.png - Status: 200 - Duration: 0ms

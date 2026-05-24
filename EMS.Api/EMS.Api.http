@@ -1,6 +1,0 @@
-@EMS.Api_HostAddress = http://localhost:5250
-
-GET {{EMS.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
