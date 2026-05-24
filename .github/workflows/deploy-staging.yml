@@ -1,0 +1,92 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  AZURE_RESOURCE_GROUP: ems-staging-rg
+  AZURE_CONTAINER_GROUP: ems-staging-aci
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Instances
+        uses: azure/aci-deploy-action@v1
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          name: ${{ env.AZURE_CONTAINER_GROUP }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop
+          registry-login-server: ${{ env.REGISTRY }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          environment-variables: |
+            ConnectionStrings__DefaultConnection=${{ secrets.STAGING_DATABASE_CONNECTION_STRING }}
+            ConnectionStrings__Redis=${{ secrets.STAGING_REDIS_CONNECTION_STRING }}
+            ASPNETCORE_ENVIRONMENT=Staging
+            JwtSettings__SecretKey=${{ secrets.JWT_SECRET_KEY }}
+          ports: 5000 5000
+          protocol: TCP
+
+      - name: Run Integration Tests
+        run: |
+          dotnet test EMS.Tests/EMS.Tests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=detailed" \
+            --filter "Category=Integration"
+        env:
+          TEST_API_URL: "http://${{ env.AZURE_CONTAINER_GROUP }}.westus.azurecontainer.io:5000"
+
+      - name: Slack Notification - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "? Staging deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Successful*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Slack Notification - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "? Staging deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

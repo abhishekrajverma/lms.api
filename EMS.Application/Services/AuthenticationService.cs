@@ -1,0 +1,301 @@
+namespace EMS.Application.Services;
+
+using AutoMapper;
+//using Azure.Core;
+using EMS.Application.DTOs.Auth;
+using EMS.Application.Interfaces.Services;
+using EMS.Domain.Entities;
+using EMS.Shared.Exceptions;
+using EMS.Shared.Interfaces.Repositories;
+using EMS.Shared.Interfaces.Security;
+using Microsoft.Extensions.Logging;
+
+/// <summary>
+/// Authentication service implementation
+/// Handles user login, registration, token refresh, and password management
+/// </summary>
+public class AuthenticationService : IAuthenticationService
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtTokenProvider _jwtTokenProvider;
+    private readonly ILoginAttemptTracker _loginAttemptTracker;
+    private readonly ITokenBlacklistService _tokenBlacklist;
+    private readonly IMapper _mapper;
+    private readonly ILogger<AuthenticationService> _logger;
+
+    public AuthenticationService(
+        IUnitOfWork unitOfWork,
+        IPasswordHasher passwordHasher,
+        IJwtTokenProvider jwtTokenProvider,
+        ILoginAttemptTracker loginAttemptTracker,
+        ITokenBlacklistService tokenBlacklist,
+        IMapper mapper,
+        ILogger<AuthenticationService> logger)
+    {
+        _unitOfWork = unitOfWork;
+        _passwordHasher = passwordHasher;
+        _jwtTokenProvider = jwtTokenProvider;
+        _loginAttemptTracker = loginAttemptTracker;
+        _tokenBlacklist = tokenBlacklist;
+        _mapper = mapper;
+        _logger = logger;
+    }
+
+    public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Login attempt for {UsernameOrEmail}", request.UsernameOrEmail);
+        return new LoginResponse
+        {
+            AccessToken = "accessToken",
+            RefreshToken = "refreshToken",
+            ExpiresIn = 3600,
+            TokenType = "Bearer",
+            //User = _mapper.Map<UserProfileResponse>("foundUser")
+        };
+
+        try
+        {
+            // Check if account is locked due to failed attempts
+            if (await _loginAttemptTracker.IsAccountLockedAsync(request.UsernameOrEmail, cancellationToken))
+            {
+                var remainingTime = await _loginAttemptTracker.GetLockoutTimeAsync(
+                    request.UsernameOrEmail, cancellationToken);
+                
+                throw new UnauthorizedException(
+                    $"Account is locked. Try again in {remainingTime?.TotalMinutes:F0} minutes.");
+            }
+
+            // Find user by email or username
+            var user = await _unitOfWork.Repository<User>().GetAllAsync(cancellationToken);
+            var foundUser = user.FirstOrDefault(u =>
+                u.Email == request.UsernameOrEmail || u.Username == request.UsernameOrEmail);
+
+            if (foundUser == null)
+            {
+                await _loginAttemptTracker.RecordFailedAttemptAsync(
+                    request.UsernameOrEmail, cancellationToken);
+                throw new UnauthorizedException("Invalid credentials");
+            }
+
+            // Verify password
+            if (!_passwordHasher.VerifyPassword(request.Password, foundUser.PasswordHash))
+            {
+                var locked = await _loginAttemptTracker.RecordFailedAttemptAsync(
+                    request.UsernameOrEmail, cancellationToken);
+
+                if (locked)
+                {
+                    throw new UnauthorizedException(
+                        "Too many failed login attempts. Account locked for 30 minutes.");
+                }
+
+                var remaining = await _loginAttemptTracker.GetRemainingAttemptsAsync(
+                    request.UsernameOrEmail, cancellationToken);
+
+                throw new UnauthorizedException(
+                    $"Invalid credentials. {remaining} attempts remaining before account lockout.");
+            }
+
+            // Check account status
+            //if (foundUser.AccountStatus != "Active")
+            //    throw new UnauthorizedException($"Account is {foundUser.AccountStatus}");
+
+            // Clear failed login attempts
+            await _loginAttemptTracker.ClearAttemptsAsync(request.UsernameOrEmail, cancellationToken);
+
+            // Update last login
+            foundUser.LastLoginAt = DateTime.UtcNow;
+            foundUser.LastLoginIpAddress = "TODO: Get from HttpContext";
+            await _unitOfWork.Repository<User>().UpdateAsync(foundUser, cancellationToken);
+
+            // Generate tokens
+            var accessToken = _jwtTokenProvider.GenerateAccessToken(foundUser);
+            var refreshToken = _jwtTokenProvider.GenerateRefreshToken();
+
+            _logger.LogInformation("User {UserId} logged in successfully", foundUser.Id);
+
+            return new LoginResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresIn = 3600,
+                TokenType = "Bearer",
+                User = _mapper.Map<UserProfileResponse>(foundUser)
+            };
+        }
+        catch (UnauthorizedException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during login for {UsernameOrEmail}", request.UsernameOrEmail);
+            throw new InternalServerException("An error occurred during login");
+        }
+    }
+
+    public async Task<int> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Registration attempt for {Email}", request.Email);
+
+        try
+        {
+            // Check if user already exists
+            var existingUsers = await _unitOfWork.Repository<User>().GetAllAsync(cancellationToken);
+            
+            if (existingUsers.Any(u => u.Email == request.Email))
+                throw new ConflictException("Email already registered");
+
+            if (existingUsers.Any(u => u.Username == request.Username))
+                throw new ConflictException("Username already taken");
+
+            // Hash password
+            var passwordHash = _passwordHasher.HashPassword(request.Password);
+
+            // Create new user
+            var user = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                PasswordHash = passwordHash,
+                //Role = request.Role ?? "Student",
+                //AccountStatus = "PendingVerification",
+                IsEmailVerified = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var userId = await _unitOfWork.Repository<User>().InsertAsync(user, cancellationToken);
+
+            _logger.LogInformation("User {UserId} registered successfully", userId);
+
+            return userId;
+        }
+        catch (ConflictException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during registration for {Email}", request.Email);
+            throw new InternalServerException("An error occurred during registration");
+        }
+    }
+
+    public async Task<LoginResponse> RefreshTokenAsync(
+        RefreshTokenRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Token refresh requested");
+
+        try
+        {
+            // Check if token is revoked
+            if (await _tokenBlacklist.IsTokenRevokedAsync(request.RefreshToken, cancellationToken))
+                throw new UnauthorizedException("Token has been revoked");
+
+            // In a real implementation, you would:
+            // 1. Look up refresh token in database
+            // 2. Check if it's expired
+            // 3. Check if user still exists
+            // 4. Generate new access token
+
+            throw new NotImplementedException("Refresh token endpoint requires database storage");
+        }
+        catch (UnauthorizedException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing token");
+            throw new InternalServerException("Token refresh failed");
+        }
+    }
+
+    public async Task<bool> ChangePasswordAsync(
+        int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Password change requested for user {UserId}", userId);
+
+        try
+        {
+            var user = await _unitOfWork.Repository<User>().GetByIdAsync(userId, cancellationToken);
+            if (user == null)
+                throw new NotFoundException("User", userId.ToString());
+
+            // Verify current password
+            if (!_passwordHasher.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+                throw new UnauthorizedException("Current password is incorrect");
+
+            // Hash and update password
+            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+            user.PasswordChangedAt = DateTime.UtcNow;
+
+            await _unitOfWork.Repository<User>().UpdateAsync(user, cancellationToken);
+
+            _logger.LogInformation("Password changed successfully for user {UserId}", userId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password for user {UserId}", userId);
+            throw;
+        }
+    }
+
+    public async Task<bool> ForgotPasswordAsync(
+        ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Password reset requested for {Email}", request.Email);
+        
+        // TODO: Implement password reset with email token
+        throw new NotImplementedException("Password reset requires email service configuration");
+    }
+
+    public async Task<bool> ResetPasswordAsync(
+        ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Password reset for {Email}", request.Email);
+        
+        // TODO: Implement password reset token validation
+        throw new NotImplementedException("Password reset requires token validation");
+    }
+
+    public async Task<bool> LogoutAsync(string token, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Logout requested");
+
+        try
+        {
+            var revoked = await _tokenBlacklist.RevokeTokenAsync(token, cancellationToken);
+            
+            if (revoked)
+                _logger.LogInformation("User logged out successfully");
+            
+            return revoked;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            throw new InternalServerException("Logout failed");
+        }
+    }
+
+    public async Task<bool> VerifyEmailAsync(string email, string token, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Email verification requested for {Email}", email);
+        
+        // TODO: Implement email verification token validation
+        throw new NotImplementedException("Email verification requires token validation");
+    }
+
+    public async Task<bool> SendEmailVerificationAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Email verification sent for user {UserId}", userId);
+        
+        // TODO: Implement email sending
+        throw new NotImplementedException("Email verification requires email service configuration");
+    }
+}

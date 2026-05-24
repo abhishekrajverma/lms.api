@@ -1,0 +1,83 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          SA_PASSWORD: "YourPassword123!"
+          ACCEPT_EULA: "Y"
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourPassword123! -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 1433:1433
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test EMS.Tests/EMS.Tests.csproj --configuration Release --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --no-build
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: '**/TestResults'
+
+    - name: Upload Coverage Reports
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./TestResults
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Generate Coverage Badge
+      run: |
+        # Install reportgenerator
+        dotnet tool install -g dotnet-reportgenerator-globaltool
+        
+        # Generate reports
+        reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"HtmlInline;Badges"
+        
+        # Copy badge
+        cp coverage-report/badge.svg coverage-badge.svg
+
+    - name: Upload Coverage Badge
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-badge
+        path: coverage-badge.svg

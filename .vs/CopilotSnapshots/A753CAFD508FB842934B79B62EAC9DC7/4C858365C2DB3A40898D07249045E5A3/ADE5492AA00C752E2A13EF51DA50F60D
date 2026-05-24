@@ -1,0 +1,292 @@
+﻿namespace EMS.Api.Controllers;
+
+using EMS.Application.DTOs.Grade;
+using EMS.Application.Interfaces.Services;
+using EMS.Shared.Common;
+using EMS.Shared.Exceptions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+/// <summary>
+/// Grades API Controller
+/// Handles all grade and assessment-related HTTP requests
+/// Base route: /api/v1/grades
+/// </summary>
+[ApiController]
+[Route("api/v1/[controller]")]
+[Produces("application/json")]
+[Authorize] // All endpoints require authentication
+public class GradesController : ControllerBase
+{
+    private readonly IGradeService _gradeService;
+    private readonly ILogger<GradesController> _logger;
+
+    public GradesController(IGradeService gradeService, ILogger<GradesController> logger)
+    {
+        _gradeService = gradeService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Get all grades with pagination (Admin and Faculty only)
+    /// GET /api/v1/grades?pageNumber=1&pageSize=10
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<GradeResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResponse<GradeResponse>>>> GetAllGrades(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting all grades - Page: {PageNumber}, Size: {PageSize}", pageNumber, pageSize);
+
+        try
+        {
+            var grades = await _gradeService.GetAllGradesAsync(pageNumber, pageSize, cancellationToken);
+            return Ok(ApiResponse<PaginatedResponse<GradeResponse>>.SuccessResponse(grades, "Grades retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving grades");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving grades"));
+        }
+    }
+
+    /// <summary>
+    /// Get grade by ID (Student can view own grades only)
+    /// GET /api/v1/grades/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<GradeResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<GradeResponse>>> GetGradeById(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting grade with ID: {GradeId}", id);
+
+        try
+        {
+            var grade = await _gradeService.GetGradeByIdAsync(id, cancellationToken);
+            return Ok(ApiResponse<GradeResponse>.SuccessResponse(grade, "Grade retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Create new grade (Faculty only)
+    /// POST /api/v1/grades
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = "Faculty")]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<int>>> CreateGrade(
+        [FromBody] CreateGradeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Creating grade for student {StudentId} in course {CourseId}", 
+            request.StudentId, request.CourseId);
+
+        try
+        {
+            var gradeId = await _gradeService.CreateGradeAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetGradeById), new { id = gradeId },
+                ApiResponse<int>.SuccessResponse(gradeId, "Grade created", 201));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating grade");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error creating grade"));
+        }
+    }
+
+    /// <summary>
+    /// Update grade (Faculty only)
+    /// PUT /api/v1/grades/{id}
+    /// </summary>
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Faculty")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateGrade(
+        int id,
+        [FromBody] UpdateGradeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating grade with ID: {GradeId}", id);
+
+        try
+        {
+            await _gradeService.UpdateGradeAsync(id, request, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Grade updated"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+        catch (UnprocessableEntityException ex)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message, 422));
+        }
+    }
+
+    /// <summary>
+    /// Delete grade (Admin only)
+    /// DELETE /api/v1/grades/{id}
+    /// </summary>
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> DeleteGrade(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Deleting grade with ID: {GradeId}", id);
+
+        try
+        {
+            await _gradeService.DeleteGradeAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get student's grades (Student can view own, Faculty/Admin can view all)
+    /// GET /api/v1/grades/student/{studentId}
+    /// </summary>
+    [HttpGet("student/{studentId}")]
+    [ProducesResponseType(typeof(ApiResponse<List<GradeResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<GradeResponse>>>> GetStudentGrades(
+        int studentId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting grades for student {StudentId}", studentId);
+
+        try
+        {
+            var grades = await _gradeService.GetStudentGradesAsync(studentId, cancellationToken);
+            return Ok(ApiResponse<List<GradeResponse>>.SuccessResponse(grades, "Student grades retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get course grades (Faculty teaching course or Admin)
+    /// GET /api/v1/grades/course/{courseId}
+    /// </summary>
+    [HttpGet("course/{courseId}")]
+    [Authorize(Roles = "Faculty,Admin,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<List<GradeResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<GradeResponse>>>> GetCourseGrades(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting grades for course {CourseId}", courseId);
+
+        try
+        {
+            var grades = await _gradeService.GetCourseGradesAsync(courseId, cancellationToken);
+            return Ok(ApiResponse<List<GradeResponse>>.SuccessResponse(grades, "Course grades retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Submit grade for approval (Faculty only)
+    /// POST /api/v1/grades/{id}/submit
+    /// </summary>
+    [HttpPost("{id}/submit")]
+    [Authorize(Roles = "Faculty")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<object>>> SubmitGrade(
+        int id,
+        [FromQuery] int instructorId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Submitting grade {GradeId}", id);
+
+        try
+        {
+            await _gradeService.SubmitGradeAsync(id, instructorId, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Grade submitted"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting grade");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error submitting grade"));
+        }
+    }
+
+    /// <summary>
+    /// Get student's GPA for semester (Student can view own, Faculty/Admin can view all)
+    /// GET /api/v1/grades/student/{studentId}/gpa?semester=Fall 2024
+    /// </summary>
+    [HttpGet("student/{studentId}/gpa")]
+    [ProducesResponseType(typeof(ApiResponse<decimal>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<decimal>>> GetSemesterGPA(
+        int studentId,
+        [FromQuery] string semester,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting GPA for student {StudentId} in semester {Semester}", studentId, semester);
+
+        try
+        {
+            var gpa = await _gradeService.GetSemesterGPAAsync(studentId, semester, cancellationToken);
+            return Ok(ApiResponse<decimal>.SuccessResponse(gpa, "GPA retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get student's cumulative GPA (Student can view own, Faculty/Admin can view all)
+    /// GET /api/v1/grades/student/{studentId}/cumulative-gpa
+    /// </summary>
+    [HttpGet("student/{studentId}/cumulative-gpa")]
+    [ProducesResponseType(typeof(ApiResponse<decimal>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<decimal>>> GetCumulativeGPA(
+        int studentId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting cumulative GPA for student {StudentId}", studentId);
+
+        try
+        {
+            var gpa = await _gradeService.GetCumulativeGPAAsync(studentId, cancellationToken);
+            return Ok(ApiResponse<decimal>.SuccessResponse(gpa, "Cumulative GPA retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+}

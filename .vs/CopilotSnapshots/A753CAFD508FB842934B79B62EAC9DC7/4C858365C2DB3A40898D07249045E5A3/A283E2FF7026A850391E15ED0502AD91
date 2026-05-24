@@ -1,0 +1,269 @@
+﻿namespace EMS.Api.Controllers;
+
+using EMS.Application.DTOs.Attendance;
+using EMS.Application.DTOs.Student;
+using EMS.Application.Interfaces.Services;
+using EMS.Shared.Common;
+using EMS.Shared.Exceptions;
+using Microsoft.AspNetCore.Mvc;
+
+/// <summary>
+/// Attendance API Controller
+/// Handles all attendance-related HTTP requests
+/// Base route: /api/v1/attendance
+/// </summary>
+[ApiController]
+[Route("api/v1/[controller]")]
+[Produces("application/json")]
+public class AttendanceController : ControllerBase
+{
+    private readonly IAttendanceService _attendanceService;
+    private readonly ILogger<AttendanceController> _logger;
+
+    public AttendanceController(IAttendanceService attendanceService, ILogger<AttendanceController> logger)
+    {
+        _attendanceService = attendanceService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Get all attendance records with pagination
+    /// GET /api/v1/attendance?pageNumber=1&pageSize=10
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<AttendanceResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResponse<AttendanceResponse>>>> GetAllAttendance(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting all attendance records - Page: {PageNumber}, Size: {PageSize}", 
+            pageNumber, pageSize);
+
+        try
+        {
+            var attendance = await _attendanceService.GetAllAttendanceAsync(pageNumber, pageSize, cancellationToken);
+            return Ok(ApiResponse<PaginatedResponse<AttendanceResponse>>.SuccessResponse(
+                attendance, "Attendance records retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving attendance");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving attendance"));
+        }
+    }
+
+    /// <summary>
+    /// Get attendance record by ID
+    /// GET /api/v1/attendance/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<AttendanceResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AttendanceResponse>>> GetAttendanceById(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting attendance with ID: {AttendanceId}", id);
+
+        try
+        {
+            var attendance = await _attendanceService.GetAttendanceByIdAsync(id, cancellationToken);
+            return Ok(ApiResponse<AttendanceResponse>.SuccessResponse(attendance, "Attendance retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Mark attendance
+    /// POST /api/v1/attendance
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<int>>> MarkAttendance(
+        [FromBody] CreateAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Marking attendance for student {StudentId} in course {CourseId}", 
+            request.StudentId, request.CourseId);
+
+        try
+        {
+            var attendanceId = await _attendanceService.MarkAttendanceAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetAttendanceById), new { id = attendanceId },
+                ApiResponse<int>.SuccessResponse(attendanceId, "Attendance marked", 201));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking attendance");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error marking attendance"));
+        }
+    }
+
+    /// <summary>
+    /// Update attendance
+    /// PUT /api/v1/attendance/{id}
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateAttendance(
+        int id,
+        [FromBody] UpdateAttendanceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating attendance with ID: {AttendanceId}", id);
+
+        try
+        {
+            await _attendanceService.UpdateAttendanceAsync(id, request, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Attendance updated"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+        catch (UnprocessableEntityException ex)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message, 422));
+        }
+    }
+
+    /// <summary>
+    /// Delete attendance
+    /// DELETE /api/v1/attendance/{id}
+    /// </summary>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteAttendance(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Deleting attendance with ID: {AttendanceId}", id);
+
+        try
+        {
+            await _attendanceService.DeleteAttendanceAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get student's attendance in course
+    /// GET /api/v1/attendance/student/{studentId}/course/{courseId}
+    /// </summary>
+    [HttpGet("student/{studentId}/course/{courseId}")]
+    [ProducesResponseType(typeof(ApiResponse<List<AttendanceResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<AttendanceResponse>>>> GetStudentCourseAttendance(
+        int studentId,
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting attendance for student {StudentId} in course {CourseId}", 
+            studentId, courseId);
+
+        try
+        {
+            var attendance = await _attendanceService.GetStudentCourseAttendanceAsync(
+                studentId, courseId, cancellationToken);
+            return Ok(ApiResponse<List<AttendanceResponse>>.SuccessResponse(attendance, "Attendance retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get attendance summary for student in course
+    /// GET /api/v1/attendance/summary/{studentId}/{courseId}
+    /// </summary>
+    [HttpGet("summary/{studentId}/{courseId}")]
+    [ProducesResponseType(typeof(ApiResponse<AttendanceSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<AttendanceSummaryResponse>>> GetAttendanceSummary(
+        int studentId,
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting attendance summary for student {StudentId} in course {CourseId}", 
+            studentId, courseId);
+
+        try
+        {
+            var summary = await _attendanceService.GetAttendanceSummaryAsync(
+                studentId, courseId, cancellationToken);
+            
+            if (summary == null)
+                return NotFound(ApiResponse<object>.ErrorResponse("No attendance records found", 404));
+
+            return Ok(ApiResponse<AttendanceSummaryResponse>.SuccessResponse(summary, "Summary retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Approve absence
+    /// POST /api/v1/attendance/{id}/approve
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<object>>> ApproveAbsence(
+        int id,
+        [FromQuery] string reason,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Approving absence for attendance {AttendanceId}", id);
+
+        try
+        {
+            await _attendanceService.ApproveAbsenceAsync(id, reason, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Absence approved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Get low attendance students
+    /// GET /api/v1/attendance/course/{courseId}/low?threshold=75
+    /// </summary>
+    [HttpGet("course/{courseId}/low")]
+    [ProducesResponseType(typeof(ApiResponse<List<StudentResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<StudentResponse>>>> GetLowAttendanceStudents(
+        int courseId,
+        [FromQuery] decimal threshold = 75,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting low attendance students for course {CourseId}", courseId);
+
+        try
+        {
+            var students = await _attendanceService.GetLowAttendanceStudentsAsync(
+                courseId, threshold, cancellationToken);
+            return Ok(ApiResponse<List<StudentResponse>>.SuccessResponse(students, "Low attendance students retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+}

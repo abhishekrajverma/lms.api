@@ -1,0 +1,203 @@
+﻿namespace EMS.Application.Interfaces.Services;
+
+using EMS.Application.DTOs.Auth;
+
+/// <summary>
+/// Authentication service interface
+/// Handles login, registration, token refresh, and password management
+/// </summary>
+public interface IAuthenticationService
+{
+    /// <summary>
+    /// Login user with credentials
+    /// </summary>
+    /// <returns>LoginResponse with access token and user info</returns>
+    Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Register new user
+    /// </summary>
+    /// <returns>UserId of newly created user</returns>
+    Task<int> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Refresh access token using refresh token
+    /// </summary>
+    Task<LoginResponse> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Change user's password
+    /// </summary>
+    Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Request password reset (sends email with reset link)
+    /// </summary>
+    Task<bool> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reset password with token
+    /// </summary>
+    Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revoke token (logout)
+    /// </summary>
+    Task<bool> LogoutAsync(string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verify email address
+    /// </summary>
+    Task<bool> VerifyEmailAsync(string email, string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Send email verification link
+    /// </summary>
+    Task<bool> SendEmailVerificationAsync(int userId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Authorization service interface
+/// Handles role and permission checking
+/// </summary>
+public interface IAuthorizationService
+{
+    /// <summary>
+    /// Check if user has specific role
+    /// </summary>
+    Task<bool> UserHasRoleAsync(int userId, string role, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check if user has any of the specified roles
+    /// </summary>
+    Task<bool> UserHasAnyRoleAsync(int userId, params string[] roles);
+
+    /// <summary>
+    /// Check if user can access specific resource
+    /// </summary>
+    Task<bool> CanAccessResourceAsync(int userId, string resourceType, int resourceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check if user can perform action on resource
+    /// </summary>
+    Task<bool> CanPerformActionAsync(int userId, string action, string resourceType, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all permissions for user
+    /// </summary>
+    Task<List<string>> GetUserPermissionsAsync(int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all roles for user
+    /// </summary>
+    Task<List<string>> GetUserRolesAsync(int userId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Password hasher interface
+/// Implements secure password hashing
+/// </summary>
+public interface IPasswordHasher
+{
+    /// <summary>
+    /// Hash a plain text password
+    /// </summary>
+    /// <param name="password">Plain text password</param>
+    /// <returns>Hashed password</returns>
+    string HashPassword(string password);
+
+    /// <summary>
+    /// Verify plain text password against hash
+    /// </summary>
+    /// <param name="password">Plain text password</param>
+    /// <param name="hash">Password hash to verify against</param>
+    /// <returns>True if password matches hash</returns>
+    bool VerifyPassword(string password, string hash);
+}
+
+/// <summary>
+/// JWT token provider interface
+/// Generates and validates JWT tokens
+/// </summary>
+public interface IJwtTokenProvider
+{
+    /// <summary>
+    /// Generate JWT access token
+    /// </summary>
+    string GenerateAccessToken(Domain.Entities.User user);
+
+    /// <summary>
+    /// Generate refresh token
+    /// </summary>
+    string GenerateRefreshToken();
+
+    /// <summary>
+    /// Validate JWT token
+    /// </summary>
+    /// <returns>Token claims if valid, null if invalid</returns>
+    System.Security.Claims.ClaimsPrincipal? ValidateToken(string token);
+
+    /// <summary>
+    /// Get user ID from token
+    /// </summary>
+    int? GetUserIdFromToken(string token);
+
+    /// <summary>
+    /// Check if token is expired
+    /// </summary>
+    bool IsTokenExpired(string token);
+}
+
+/// <summary>
+/// Token blacklist service interface
+/// Manages revoked tokens (logout)
+/// </summary>
+public interface ITokenBlacklistService
+{
+    /// <summary>
+    /// Add token to blacklist
+    /// </summary>
+    Task<bool> RevokeTokenAsync(string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check if token is blacklisted
+    /// </summary>
+    Task<bool> IsTokenRevokedAsync(string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clear expired tokens from blacklist
+    /// </summary>
+    Task<bool> CleanupExpiredTokensAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Login attempt tracker interface
+/// Prevents brute force attacks
+/// </summary>
+public interface ILoginAttemptTracker
+{
+    /// <summary>
+    /// Record failed login attempt
+    /// </summary>
+    Task<bool> RecordFailedAttemptAsync(string usernameOrEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clear failed attempts after successful login
+    /// </summary>
+    Task<bool> ClearAttemptsAsync(string usernameOrEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Check if user account is locked
+    /// </summary>
+    Task<bool> IsAccountLockedAsync(string usernameOrEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get remaining attempts before lockout
+    /// </summary>
+    Task<int> GetRemainingAttemptsAsync(string usernameOrEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get time until account unlock
+    /// </summary>
+    Task<TimeSpan?> GetLockoutTimeAsync(string usernameOrEmail, CancellationToken cancellationToken = default);
+}

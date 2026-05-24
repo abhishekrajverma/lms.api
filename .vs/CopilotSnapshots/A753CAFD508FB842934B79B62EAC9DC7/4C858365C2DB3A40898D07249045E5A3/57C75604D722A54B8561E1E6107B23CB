@@ -1,0 +1,260 @@
+﻿namespace EMS.Api.Controllers;
+
+using EMS.Application.DTOs.Student;
+using EMS.Application.Interfaces.Services;
+using EMS.Shared.Common;
+using EMS.Shared.Exceptions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+/// <summary>
+/// Students API Controller
+/// Handles all student-related HTTP requests
+/// Base route: /api/v1/students
+/// </summary>
+[ApiController]
+[Route("api/v1/[controller]")]
+[Produces("application/json")]
+[Authorize] // All endpoints require authentication
+public class StudentsController : ControllerBase
+{
+    private readonly IStudentService _studentService;
+    private readonly IAuthorizationService _authorizationService;
+    private readonly ILogger<StudentsController> _logger;
+
+    public StudentsController(
+        IStudentService studentService,
+        IAuthorizationService authorizationService,
+        ILogger<StudentsController> logger)
+    {
+        _studentService = studentService;
+        _authorizationService = authorizationService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Get all students with pagination (Admin and Faculty only)
+    /// GET /api/v1/students?pageNumber=1&pageSize=10
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<StudentResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<PaginatedResponse<StudentResponse>>>> GetAllStudents(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting all students - Page: {PageNumber}, Size: {PageSize}", pageNumber, pageSize);
+
+        try
+        {
+            var students = await _studentService.GetAllStudentsAsync(pageNumber, pageSize, cancellationToken);
+            return Ok(ApiResponse<PaginatedResponse<StudentResponse>>.SuccessResponse(
+                students,
+                "Students retrieved successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving students");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving students"));
+        }
+    }
+
+    /// <summary>
+    /// Get student by ID (Student can only view own record)
+    /// GET /api/v1/students/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<StudentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<StudentResponse>>> GetStudentById(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting student with ID: {StudentId}", id);
+
+        try
+        {
+            // Authorization: Students can only view their own record
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            
+            if (userRole == "Student" && id != userId)
+                return Forbid(); // Student can't view other students
+
+            var student = await _studentService.GetStudentByIdAsync(id, cancellationToken);
+            return Ok(ApiResponse<StudentResponse>.SuccessResponse(student, "Student retrieved successfully"));
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning("Student not found: {StudentId}", id);
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Create new student (Admin and Faculty only)
+    /// POST /api/v1/students
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<int>>> CreateStudent(
+        [FromBody] CreateStudentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Creating new student: {Email}", request.Email);
+
+        try
+        {
+            var studentId = await _studentService.CreateStudentAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetStudentById), new { id = studentId },
+                ApiResponse<int>.SuccessResponse(studentId, "Student created successfully", 201));
+        }
+        catch (ConflictException ex)
+        {
+            _logger.LogWarning("Conflict creating student: {Message}", ex.Message);
+            return Conflict(ApiResponse<object>.ErrorResponse(ex.Message, 409));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating student");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error creating student"));
+        }
+    }
+
+    /// <summary>
+    /// Update student (Admin only, Faculty can update own department)
+    /// PUT /api/v1/students/{id}
+    /// </summary>
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateStudent(
+        int id,
+        [FromBody] UpdateStudentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating student with ID: {StudentId}", id);
+
+        try
+        {
+            await _studentService.UpdateStudentAsync(id, request, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Student updated successfully"));
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning("Student not found: {StudentId}", id);
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Delete student (Admin only)
+    /// DELETE /api/v1/students/{id}
+    /// </summary>
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> DeleteStudent(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Deleting student with ID: {StudentId}", id);
+
+        try
+        {
+            await _studentService.DeleteStudentAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning("Student not found: {StudentId}", id);
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Search students (Admin and Faculty only)
+    /// GET /api/v1/students/search?term=ahmed
+    /// </summary>
+    [HttpGet("search/{term}")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<List<StudentResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<StudentResponse>>>> SearchStudents(
+        string term,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Searching students with term: {Term}", term);
+
+        try
+        {
+            var students = await _studentService.SearchStudentsAsync(term, cancellationToken);
+            return Ok(ApiResponse<List<StudentResponse>>.SuccessResponse(students, "Search completed"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching students");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error searching students"));
+        }
+    }
+
+    /// <summary>
+    /// Get students by department (Faculty and Admin only)
+    /// GET /api/v1/students/department/{departmentId}
+    /// </summary>
+    [HttpGet("department/{departmentId}")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<List<StudentResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<StudentResponse>>>> GetStudentsByDepartment(
+        int departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting students in department: {DepartmentId}", departmentId);
+
+        try
+        {
+            var students = await _studentService.GetStudentsByDepartmentAsync(departmentId, cancellationToken);
+            return Ok(ApiResponse<List<StudentResponse>>.SuccessResponse(students, "Department students retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving department students");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving students"));
+        }
+    }
+
+    /// <summary>
+    /// Get students on academic probation (Admin and Faculty only)
+    /// GET /api/v1/students/probation
+    /// </summary>
+    [HttpGet("probation")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<List<StudentResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<StudentResponse>>>> GetStudentsOnProbation(
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting students on academic probation");
+
+        try
+        {
+            var students = await _studentService.GetStudentsOnProbationAsync(cancellationToken);
+            return Ok(ApiResponse<List<StudentResponse>>.SuccessResponse(students, "Probation students retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving probation students");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving students"));
+        }
+    }
+}

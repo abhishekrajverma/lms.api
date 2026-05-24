@@ -1,0 +1,149 @@
+﻿namespace EMS.Infrastructure.Security;
+
+using EMS.Shared.Interfaces.Security;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+
+/// <summary>
+/// Login attempt tracker implementation
+/// Prevents brute force attacks by locking accounts after failed attempts
+/// Uses distributed cache (Redis) for tracking
+/// </summary>
+public class LoginAttemptTracker : ILoginAttemptTracker
+{
+    private readonly IDistributedCache _cache;
+    private readonly ILogger<LoginAttemptTracker> _logger;
+    private const int MaxFailedAttempts = 5;
+    private const int LockoutMinutes = 30;
+    private const string FailedAttemptsKeyPrefix = "login_attempts_";
+    private const string LockoutKeyPrefix = "lockout_";
+
+    public LoginAttemptTracker(IDistributedCache cache, ILogger<LoginAttemptTracker> logger)
+    {
+        _cache = cache;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Record a failed login attempt
+    /// </summary>
+    public async Task<bool> RecordFailedAttemptAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Recording failed login attempt for {UsernameOrEmail}", usernameOrEmail);
+
+        var key = FailedAttemptsKeyPrefix + usernameOrEmail.ToLower();
+
+        // Get current attempt count
+        var attemptString = await _cache.GetStringAsync(key, cancellationToken);
+        var attempts = string.IsNullOrEmpty(attemptString) ? 0 : int.Parse(attemptString);
+
+        attempts++;
+
+        // Set new count with 1-hour expiration
+        await _cache.SetStringAsync(
+            key,
+            attempts.ToString(),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
+            },
+            cancellationToken);
+
+        // If max attempts reached, lock the account
+        if (attempts >= MaxFailedAttempts)
+        {
+            await LockAccountAsync(usernameOrEmail, cancellationToken);
+            _logger.LogWarning("Account locked for {UsernameOrEmail} after {Attempts} failed attempts", 
+                usernameOrEmail, attempts);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Clear failed attempts after successful login
+    /// </summary>
+    public async Task<bool> ClearAttemptsAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Clearing failed login attempts for {UsernameOrEmail}", usernameOrEmail);
+
+        var attemptsKey = FailedAttemptsKeyPrefix + usernameOrEmail.ToLower();
+        var lockoutKey = LockoutKeyPrefix + usernameOrEmail.ToLower();
+
+        await _cache.RemoveAsync(attemptsKey, cancellationToken);
+        await _cache.RemoveAsync(lockoutKey, cancellationToken);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Check if account is locked
+    /// </summary>
+    public async Task<bool> IsAccountLockedAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        var lockoutKey = LockoutKeyPrefix + usernameOrEmail.ToLower();
+        var lockoutValue = await _cache.GetStringAsync(lockoutKey, cancellationToken);
+
+        if (string.IsNullOrEmpty(lockoutValue))
+            return false;
+
+        _logger.LogWarning("Account is locked for {UsernameOrEmail}", usernameOrEmail);
+        return true;
+    }
+
+    /// <summary>
+    /// Get remaining attempts before lockout
+    /// </summary>
+    public async Task<int> GetRemainingAttemptsAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        var key = FailedAttemptsKeyPrefix + usernameOrEmail.ToLower();
+        var attemptString = await _cache.GetStringAsync(key, cancellationToken);
+
+        if (string.IsNullOrEmpty(attemptString))
+            return MaxFailedAttempts;
+
+        var attempts = int.Parse(attemptString);
+        return Math.Max(0, MaxFailedAttempts - attempts);
+    }
+
+    /// <summary>
+    /// Get time until account unlock
+    /// </summary>
+    public async Task<TimeSpan?> GetLockoutTimeAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        var lockoutKey = LockoutKeyPrefix + usernameOrEmail.ToLower();
+        
+        // Redis doesn't provide TTL via IDistributedCache, so we store expiration time
+        var lockoutData = await _cache.GetStringAsync(lockoutKey, cancellationToken);
+        
+        if (string.IsNullOrEmpty(lockoutData))
+            return null;
+
+        if (DateTime.TryParse(lockoutData, out var lockoutTime))
+        {
+            var remainingTime = lockoutTime - DateTime.UtcNow;
+            return remainingTime.TotalSeconds > 0 ? remainingTime : null;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Lock account for specified duration
+    /// </summary>
+    private async Task LockAccountAsync(string usernameOrEmail, CancellationToken cancellationToken)
+    {
+        var lockoutKey = LockoutKeyPrefix + usernameOrEmail.ToLower();
+        var lockoutUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
+
+        await _cache.SetStringAsync(
+            lockoutKey,
+            lockoutUntil.ToString("O"),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(LockoutMinutes)
+            },
+            cancellationToken);
+    }
+}

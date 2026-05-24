@@ -1,0 +1,217 @@
+2026-01-08 20:20:08.937 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-01-08 20:20:09.089 +05:30 [INF] Request: GET /swagger
+2026-01-08 20:20:09.097 +05:30 [INF] Request: GET /swagger - Status: 404 - Duration: 192ms
+2026-01-08 20:20:22.896 +05:30 [INF] Request: GET /swagger/v1
+2026-01-08 20:20:22.908 +05:30 [INF] Request: GET /swagger/v1 - Status: 404 - Duration: 13ms
+2026-01-08 20:20:32.353 +05:30 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 131ms
+2026-01-08 20:20:32.479 +05:30 [INF] Request: GET /favicon.ico
+2026-01-08 20:20:32.483 +05:30 [INF] Request: GET /favicon.ico - Status: 404 - Duration: 6ms
+2026-01-08 20:43:36.915 +05:30 [INF] Request: GET /swagger/api/v1/swagger.json
+2026-01-08 20:43:36.919 +05:30 [INF] Request: GET /swagger/api/v1/swagger.json - Status: 404 - Duration: 5ms
+2026-01-08 20:43:45.320 +05:30 [INF] Request: GET /swagger/api/v1/
+2026-01-08 20:43:45.324 +05:30 [INF] Request: GET /swagger/api/v1/ - Status: 404 - Duration: 4ms
+2026-01-08 20:43:57.548 +05:30 [INF] Request: GET /swagger/api/v1/auth/login
+2026-01-08 20:43:57.553 +05:30 [INF] Request: GET /swagger/api/v1/auth/login - Status: 404 - Duration: 4ms
+2026-01-08 21:12:39.791 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-01-08 21:12:39.956 +05:30 [INF] Request: GET /swagger
+2026-01-08 21:12:39.969 +05:30 [INF] Request: GET /swagger - Status: 404 - Duration: 197ms
+2026-01-08 21:13:46.723 +05:30 [INF] Request: GET / - Status: 301 - Duration: 4ms
+2026-01-08 21:13:47.037 +05:30 [INF] Request: GET /index.html - Status: 200 - Duration: 236ms
+2026-01-08 21:13:47.319 +05:30 [INF] Request: GET /swagger-ui.css - Status: 200 - Duration: 274ms
+2026-01-08 21:13:47.319 +05:30 [INF] Request: GET /swagger-ui-standalone-preset.js - Status: 200 - Duration: 265ms
+2026-01-08 21:13:47.357 +05:30 [INF] Request: GET /swagger-ui-bundle.js - Status: 200 - Duration: 311ms
+2026-01-08 21:13:47.769 +05:30 [INF] Request: GET /favicon-32x32.png - Status: 200 - Duration: 0ms
+2026-01-08 21:13:47.776 +05:30 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 55ms
+2026-01-08 21:14:50.792 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-01-08 21:14:51.330 +05:30 [INF] Request: GET /index.html - Status: 200 - Duration: 542ms
+2026-01-08 21:14:51.834 +05:30 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 37ms
+2026-01-08 21:15:29.291 +05:30 [INF] Request: GET /index.html - Status: 200 - Duration: 6ms
+2026-01-08 21:15:29.503 +05:30 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 43ms
+2026-01-08 22:43:11.794 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-01-08 22:43:11.871 +05:30 [INF] Request: GET / - Status: 301 - Duration: 85ms
+2026-01-08 22:43:12.076 +05:30 [INF] Request: GET /index.html - Status: 200 - Duration: 156ms
+2026-01-08 22:43:12.202 +05:30 [INF] Request: GET /swagger-ui-standalone-preset.js - Status: 200 - Duration: 96ms
+2026-01-08 22:43:12.202 +05:30 [INF] Request: GET /swagger-ui.css - Status: 200 - Duration: 97ms
+2026-01-08 22:43:12.228 +05:30 [INF] Request: GET /swagger-ui-bundle.js - Status: 200 - Duration: 123ms
+2026-01-08 22:43:12.530 +05:30 [INF] Request: GET /swagger/v1/swagger.json - Status: 200 - Duration: 32ms
+2026-01-08 22:44:04.632 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 22:44:27.209 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 200 - Duration: 22584ms
+2026-01-08 22:44:27.213 +05:30 [WRN] Slow request detected: POST /api/v1/Auth/login - Duration: 22584ms
+2026-01-08 22:44:27.233 +05:30 [ERR] Unhandled exception occurred
+System.InvalidOperationException: Connection string 'DefaultConnection' not found
+   at EMS.Infrastructure.Repositories.DbConnectionFactory..ctor(IConfiguration configuration, ILogger`1 logger) in D:\EMS\Backend\EMS.Infrastructure\Repositories\DbConnectionFactory.cs:line 23
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.RuntimeConstructorInfo.Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.DynamicServiceProviderEngine.<>c__DisplayClass2_0.<RealizeService>b__0(ServiceProviderEngineScope scope)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
+   at lambda_method12(Closure, IServiceProvider, Object[])
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Program.<>c.<<<Main>$>b__0_2>d.MoveNext() in D:\EMS\Backend\EMS.Api\Program.cs:line 95
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at EMS.Api.Middleware.PerformanceMonitoringMiddleware.InvokeAsync(HttpContext context) in D:\EMS\Backend\EMS.Api\Middleware\PerformanceMonitoringMiddleware.cs:line 26
+   at EMS.Api.Middleware.ExceptionHandlingMiddleware.InvokeAsync(HttpContext context) in D:\EMS\Backend\EMS.Api\Middleware\ExceptionHandlingMiddleware.cs:line 27
+2026-01-08 22:56:20.248 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 22:56:20.255 +05:30 [FTL] Database connection string 'DefaultConnection' is missing in configuration
+2026-01-08 22:59:37.632 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 200 - Duration: 197383ms
+2026-01-08 22:59:37.641 +05:30 [WRN] Slow request detected: POST /api/v1/Auth/login - Duration: 197383ms
+2026-01-08 22:59:37.661 +05:30 [ERR] Unhandled exception occurred
+System.InvalidOperationException: Connection string 'DefaultConnection' not found
+   at EMS.Infrastructure.Repositories.DbConnectionFactory..ctor(IConfiguration configuration, ILogger`1 logger)
+   at InvokeStub_DbConnectionFactory..ctor(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.RuntimeConstructorInfo.Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitConstructor(ConstructorCallSite constructorCallSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitScopeCache(ServiceCallSite callSite, RuntimeResolverContext context)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.DynamicServiceProviderEngine.<>c__DisplayClass2_0.<RealizeService>b__0(ServiceProviderEngineScope scope)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
+   at lambda_method22(Closure, IServiceProvider, Object[])
+   at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Program.<>c.<<<Main>$>b__0_2>d.MoveNext() in D:\EMS\Backend\EMS.Api\Program.cs:line 95
+--- End of stack trace from previous location ---
+   at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+   at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at EMS.Api.Middleware.PerformanceMonitoringMiddleware.InvokeAsync(HttpContext context) in D:\EMS\Backend\EMS.Api\Middleware\PerformanceMonitoringMiddleware.cs:line 26
+   at EMS.Api.Middleware.ExceptionHandlingMiddleware.InvokeAsync(HttpContext context) in D:\EMS\Backend\EMS.Api\Middleware\ExceptionHandlingMiddleware.cs:line 27
+2026-01-08 22:59:45.041 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 22:59:45.044 +05:30 [INF] DbConnectionFactory initialized with connection string
+2026-01-08 22:59:45.188 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 22:59:45.192 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 22:59:45.278 +05:30 [ERR] Error during login for fdsfasd
+System.ArgumentNullException: Value cannot be null. (Parameter 'configuration')
+   at StackExchange.Redis.ConfigurationOptions.DoParse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 858
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 666
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 656
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions.GetConfiguredOptions(String libSuffix)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.ConnectSlowAsync(CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAndRefreshAsync(String key, Boolean getData, CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAsync(String key, CancellationToken token)
+   at Microsoft.Extensions.Caching.Distributed.DistributedCacheExtensions.GetStringAsync(IDistributedCache cache, String key, CancellationToken token)
+   at EMS.Infrastructure.Security.LoginAttemptTracker.IsAccountLockedAsync(String usernameOrEmail, CancellationToken cancellationToken)
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 51
+2026-01-08 22:59:45.365 +05:30 [ERR] Error during login
+EMS.Shared.Exceptions.InternalServerException: An error occurred during login
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 125
+   at EMS.Api.Controllers.AuthController.Login(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Api\Controllers\AuthController.cs:line 51
+2026-01-08 22:59:45.373 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 400 - Duration: 331ms
+2026-01-08 23:02:11.652 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 23:02:11.692 +05:30 [INF] DbConnectionFactory initialized with connection string
+2026-01-08 23:02:11.704 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:02:11.706 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:02:11.794 +05:30 [ERR] Error during login for fdsfasd
+System.ArgumentNullException: Value cannot be null. (Parameter 'configuration')
+   at StackExchange.Redis.ConfigurationOptions.DoParse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 858
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 666
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 656
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions.GetConfiguredOptions(String libSuffix)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.ConnectSlowAsync(CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAndRefreshAsync(String key, Boolean getData, CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAsync(String key, CancellationToken token)
+   at Microsoft.Extensions.Caching.Distributed.DistributedCacheExtensions.GetStringAsync(IDistributedCache cache, String key, CancellationToken token)
+   at EMS.Infrastructure.Security.LoginAttemptTracker.IsAccountLockedAsync(String usernameOrEmail, CancellationToken cancellationToken)
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 51
+2026-01-08 23:02:11.881 +05:30 [ERR] Error during login
+EMS.Shared.Exceptions.InternalServerException: An error occurred during login
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 125
+   at EMS.Api.Controllers.AuthController.Login(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Api\Controllers\AuthController.cs:line 51
+2026-01-08 23:02:11.884 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 400 - Duration: 231ms
+2026-01-08 23:13:56.233 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 23:13:56.237 +05:30 [INF] DbConnectionFactory initialized with connection string
+2026-01-08 23:13:56.242 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:13:56.244 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:13:56.309 +05:30 [ERR] Error during login for fdsfasd
+System.ArgumentNullException: Value cannot be null. (Parameter 'configuration')
+   at StackExchange.Redis.ConfigurationOptions.DoParse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 858
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration, Boolean ignoreUnknown) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 666
+   at StackExchange.Redis.ConfigurationOptions.Parse(String configuration) in /_/src/StackExchange.Redis/ConfigurationOptions.cs:line 656
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions.GetConfiguredOptions(String libSuffix)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.ConnectSlowAsync(CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAndRefreshAsync(String key, Boolean getData, CancellationToken token)
+   at Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache.GetAsync(String key, CancellationToken token)
+   at Microsoft.Extensions.Caching.Distributed.DistributedCacheExtensions.GetStringAsync(IDistributedCache cache, String key, CancellationToken token)
+   at EMS.Infrastructure.Security.LoginAttemptTracker.IsAccountLockedAsync(String usernameOrEmail, CancellationToken cancellationToken)
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 51
+2026-01-08 23:13:56.376 +05:30 [ERR] Error during login
+EMS.Shared.Exceptions.InternalServerException: An error occurred during login
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Application\Services\AuthenticationService.cs:line 125
+   at EMS.Api.Controllers.AuthController.Login(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Api\Controllers\AuthController.cs:line 51
+2026-01-08 23:13:56.379 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 400 - Duration: 148ms
+2026-01-08 23:14:18.083 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 23:14:18.091 +05:30 [INF] DbConnectionFactory initialized with connection string
+2026-01-08 23:14:18.095 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:14:18.098 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:14:18.200 +05:30 [ERR] Error during login
+AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+String -> UserProfileResponse
+System.String -> EMS.Application.DTOs.Auth.UserProfileResponse
+   at lambda_method33(Closure, Object, UserProfileResponse, ResolutionContext)
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken)
+   at EMS.Api.Controllers.AuthController.Login(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Api\Controllers\AuthController.cs:line 51
+2026-01-08 23:14:18.209 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 400 - Duration: 126ms
+2026-01-08 23:15:23.994 +05:30 [INF] Request: POST /api/v1/Auth/login
+2026-01-08 23:15:23.995 +05:30 [INF] DbConnectionFactory initialized with connection string
+2026-01-08 23:15:23.997 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:15:23.998 +05:30 [INF] Login attempt for fdsfasd
+2026-01-08 23:15:24.098 +05:30 [ERR] Error during login
+AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+String -> UserProfileResponse
+System.String -> EMS.Application.DTOs.Auth.UserProfileResponse
+   at lambda_method33(Closure, Object, UserProfileResponse, ResolutionContext)
+   at EMS.Application.Services.AuthenticationService.LoginAsync(LoginRequest request, CancellationToken cancellationToken)
+   at EMS.Api.Controllers.AuthController.Login(LoginRequest request, CancellationToken cancellationToken) in D:\EMS\Backend\EMS.Api\Controllers\AuthController.cs:line 51
+2026-01-08 23:15:24.102 +05:30 [INF] Request: POST /api/v1/Auth/login - Status: 400 - Duration: 108ms

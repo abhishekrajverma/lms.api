@@ -1,0 +1,238 @@
+﻿namespace EMS.Application.Services;
+
+using AutoMapper;
+using EMS.Application.DTOs.Student;
+using EMS.Application.Interfaces.Services;
+using EMS.Domain.Entities;
+using EMS.Infrastructure.Repositories;
+using EMS.Shared.Common;
+using EMS.Shared.Exceptions;
+using Microsoft.Extensions.Logging;
+
+/// <summary>
+/// Student service implementation
+/// Contains business logic for student management
+/// </summary>
+public class StudentService : IStudentService
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly ILogger<StudentService> _logger;
+    private const string CacheKeyPrefix = "student_";
+
+    public StudentService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        ILogger<StudentService> logger)
+    {
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
+        _logger = logger;
+    }
+
+    public async Task<StudentResponse?> GetStudentByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Fetching student with ID: {StudentId}", id);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        return _mapper.Map<StudentResponse>(student);
+    }
+
+    public async Task<PaginatedResponse<StudentResponse>> GetAllStudentsAsync(
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Fetching all students - Page: {PageNumber}, Size: {PageSize}", pageNumber, pageSize);
+
+        var pagination = new PaginationModel { PageNumber = pageNumber, PageSize = pageSize };
+        var students = await _unitOfWork.Repository<Student>().GetAllAsync(cancellationToken);
+
+        var totalCount = students.Count();
+        var paginatedStudents = students
+            .Skip(pagination.GetOffset())
+            .Take(pagination.PageSize)
+            .ToList();
+
+        return new PaginatedResponse<StudentResponse>
+        {
+            Items = _mapper.Map<List<StudentResponse>>(paginatedStudents),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<int> CreateStudentAsync(CreateStudentRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Creating student: {Email}", request.Email);
+
+        // Map DTO to entity
+        var student = _mapper.Map<Student>(request);
+        student.CurrentAcademicYear = DateTime.Now.Year.ToString();
+        student.CurrentSemester = 1;
+        student.Status = "Active";
+
+        // Generate enrollment number (YearStudentCount format)
+        var enrollmentNumber = GenerateEnrollmentNumber();
+        student.EnrollmentNumber = enrollmentNumber;
+
+        // TODO: Create User account here (implement after auth service)
+        // For now, just save student
+        var studentId = await _unitOfWork.Repository<Student>().InsertAsync(student, cancellationToken);
+
+        _logger.LogInformation("Student created with ID: {StudentId}, Enrollment: {EnrollmentNumber}", 
+            studentId, enrollmentNumber);
+
+        return studentId;
+    }
+
+    public async Task<int> UpdateStudentAsync(int id, UpdateStudentRequest request, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating student with ID: {StudentId}", id);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        _mapper.Map(request, student);
+        student.UpdateTimestamp();
+
+        var result = await _unitOfWork.Repository<Student>().UpdateAsync(student, cancellationToken);
+
+        _logger.LogInformation("Student {StudentId} updated successfully", id);
+
+        return result;
+    }
+
+    public async Task<bool> DeleteStudentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Deleting student with ID: {StudentId}", id);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        student.SoftDelete();
+        await _unitOfWork.Repository<Student>().UpdateAsync(student, cancellationToken);
+
+        _logger.LogWarning("Student {StudentId} soft deleted", id);
+
+        return true;
+    }
+
+    public async Task<List<StudentResponse>> SearchStudentsAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Searching students with term: {SearchTerm}", searchTerm);
+
+        var students = await _unitOfWork.Repository<Student>().GetAllAsync(cancellationToken);
+        
+        var filtered = students
+            .Where(s => s.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+                     || s.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+                     || s.EnrollmentNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return _mapper.Map<List<StudentResponse>>(filtered);
+    }
+
+    public async Task<List<StudentResponse>> GetStudentsByDepartmentAsync(int departmentId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Fetching students in department: {DepartmentId}", departmentId);
+
+        var students = await _unitOfWork.Repository<Student>().GetAllAsync(cancellationToken);
+        
+        var departmentStudents = students
+            .Where(s => s.DepartmentId == departmentId)
+            .ToList();
+
+        return _mapper.Map<List<StudentResponse>>(departmentStudents);
+    }
+
+    public async Task<List<StudentResponse>> GetStudentsByStatusAsync(string status, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Fetching students with status: {Status}", status);
+
+        var students = await _unitOfWork.Repository<Student>().GetAllAsync(cancellationToken);
+        
+        var filteredStudents = students
+            .Where(s => s.Status == status)
+            .ToList();
+
+        return _mapper.Map<List<StudentResponse>>(filteredStudents);
+    }
+
+    public async Task<bool> UpdateStudentGPAAsync(int id, decimal newGPA, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating GPA for student {StudentId} to {GPA}", id, newGPA);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        student.UpdateGPA(newGPA);
+        await _unitOfWork.Repository<Student>().UpdateAsync(student, cancellationToken);
+
+        _logger.LogInformation("Student {StudentId} GPA updated to {GPA}", id, newGPA);
+
+        return true;
+    }
+
+    public async Task<bool> IsEligibleToGraduateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Checking graduation eligibility for student {StudentId}", id);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        return student.IsEligibleToGraduate();
+    }
+
+    public async Task<bool> MarkAsGraduatedAsync(int id, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Marking student {StudentId} as graduated", id);
+
+        var student = await _unitOfWork.Repository<Student>().GetByIdAsync(id, cancellationToken);
+        if (student == null)
+            throw new NotFoundException("Student", id.ToString());
+
+        if (!student.IsEligibleToGraduate())
+            throw new UnprocessableEntityException("Student is not eligible to graduate");
+
+        student.MarkAsGraduated();
+        await _unitOfWork.Repository<Student>().UpdateAsync(student, cancellationToken);
+
+        _logger.LogInformation("Student {StudentId} marked as graduated", id);
+
+        return true;
+    }
+
+    public async Task<List<StudentResponse>> GetStudentsOnProbationAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Fetching students on academic probation");
+
+        var students = await _unitOfWork.Repository<Student>().GetAllAsync(cancellationToken);
+        
+        var probationStudents = students
+            .Where(s => s.IsOnAcademicProbation)
+            .ToList();
+
+        return _mapper.Map<List<StudentResponse>>(probationStudents);
+    }
+
+    /// <summary>
+    /// Generate unique enrollment number
+    /// Format: YYYYNNNNN (Year + 5-digit sequence)
+    /// </summary>
+    private string GenerateEnrollmentNumber()
+    {
+        var year = DateTime.Now.Year;
+        var timestamp = DateTime.Now.Ticks;
+        var sequence = (int)((timestamp % 10000) + 1);
+        return $"{year}{sequence:D5}";
+    }
+}

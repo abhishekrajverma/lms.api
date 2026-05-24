@@ -1,0 +1,67 @@
+﻿namespace EMS.Infrastructure.Extensions;
+
+using EMS.Domain.Entities;
+using EMS.Infrastructure.Caching;
+using EMS.Infrastructure.Repositories;
+using EMS.Infrastructure.Security;
+using EMS.Shared.Interfaces.Caching;
+using EMS.Shared.Interfaces.Repositories;
+using EMS.Shared.Interfaces.Security;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+/// <summary>
+/// Infrastructure layer service registration
+/// Registers all repositories, caching, security, and logging services
+/// </summary>
+public static class ServiceExtensions
+{
+    /// <summary>
+    /// Add infrastructure services to DI container
+    /// </summary>
+    public static IServiceCollection AddInfrastructureServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Connection factory
+        services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
+
+        // Unit of Work
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Generic repositories
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+        // Specific repositories
+        services.AddScoped<IGenericRepository<Student>, GenericRepository<Student>>();
+        services.AddScoped<IGenericRepository<Course>, GenericRepository<Course>>();
+        services.AddScoped<IGenericRepository<Grade>, GenericRepository<Grade>>();
+        services.AddScoped<IGenericRepository<Attendance>, GenericRepository<Attendance>>();
+        services.AddScoped<IGenericRepository<User>, GenericRepository<User>>();
+        services.AddScoped<IGenericRepository<Department>, GenericRepository<Department>>();
+
+        // Stored procedure repository
+        services.AddScoped<IStoredProcedureRepository, StoredProcedureRepository>();
+
+        // Redis cache
+        services.AddStackExchangeRedisCache(options =>
+        {
+            var redisConnection = configuration.GetConnectionString("Redis");
+            options.Configuration = redisConnection;
+        });
+
+        services.AddScoped<ICacheService, RedisCacheService>();
+
+        // Security services
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IJwtTokenProvider, JwtTokenProvider>();
+        services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
+        services.AddScoped<ILoginAttemptTracker, LoginAttemptTracker>();
+
+        // Configure JWT settings
+        services.Configure<JwtTokenProvider.JwtSettings>(configuration.GetSection("JwtSettings"));
+        services.AddScoped(sp => sp.GetRequiredService<IOptions<JwtTokenProvider.JwtSettings>>().Value);
+
+        return services;
+    }
+}

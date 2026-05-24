@@ -1,0 +1,237 @@
+﻿namespace EMS.Api.Controllers;
+
+using EMS.Application.DTOs.Course;
+using EMS.Application.DTOs.Student;
+using EMS.Application.Interfaces.Services;
+using EMS.Shared.Common;
+using EMS.Shared.Exceptions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+/// <summary>
+/// Courses API Controller
+/// Handles all course-related HTTP requests
+/// Base route: /api/v1/courses
+/// </summary>
+[ApiController]
+[Route("api/v1/[controller]")]
+[Produces("application/json")]
+[Authorize] // All endpoints require authentication
+public class CoursesController : ControllerBase
+{
+    private readonly ICourseService _courseService;
+    private readonly ILogger<CoursesController> _logger;
+
+    public CoursesController(ICourseService courseService, ILogger<CoursesController> logger)
+    {
+        _courseService = courseService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Get all courses with pagination (All authenticated users)
+    /// GET /api/v1/courses?pageNumber=1&pageSize=10
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponse<CourseResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResponse<CourseResponse>>>> GetAllCourses(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting all courses - Page: {PageNumber}, Size: {PageSize}", pageNumber, pageSize);
+
+        try
+        {
+            var courses = await _courseService.GetAllCoursesAsync(pageNumber, pageSize, cancellationToken);
+            return Ok(ApiResponse<PaginatedResponse<CourseResponse>>.SuccessResponse(courses, "Courses retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving courses");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving courses"));
+        }
+    }
+
+    /// <summary>
+    /// Get course by ID (All authenticated users)
+    /// GET /api/v1/courses/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<CourseResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CourseResponse>>> GetCourseById(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting course with ID: {CourseId}", id);
+
+        try
+        {
+            var course = await _courseService.GetCourseByIdAsync(id, cancellationToken);
+            return Ok(ApiResponse<CourseResponse>.SuccessResponse(course, "Course retrieved"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Create new course (Admin and Faculty only)
+    /// POST /api/v1/courses
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<int>>> CreateCourse(
+        [FromBody] CreateCourseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Creating new course: {CourseCode}", request.CourseCode);
+
+        try
+        {
+            var courseId = await _courseService.CreateCourseAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetCourseById), new { id = courseId },
+                ApiResponse<int>.SuccessResponse(courseId, "Course created", 201));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating course");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error creating course"));
+        }
+    }
+
+    /// <summary>
+    /// Update course (Admin and Faculty only)
+    /// PUT /api/v1/courses/{id}
+    /// </summary>
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateCourse(
+        int id,
+        [FromBody] UpdateCourseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Updating course with ID: {CourseId}", id);
+
+        try
+        {
+            await _courseService.UpdateCourseAsync(id, request, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Course updated"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Delete course (Admin only)
+    /// DELETE /api/v1/courses/{id}
+    /// </summary>
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> DeleteCourse(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Deleting course with ID: {CourseId}", id);
+
+        try
+        {
+            await _courseService.DeleteCourseAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Enroll student in course (All authenticated users can enroll themselves)
+    /// POST /api/v1/courses/{courseId}/enroll/{studentId}
+    /// </summary>
+    [HttpPost("{courseId}/enroll/{studentId}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<object>>> EnrollStudent(
+        int courseId,
+        int studentId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Enrolling student {StudentId} in course {CourseId}", studentId, courseId);
+
+        try
+        {
+            await _courseService.EnrollStudentAsync(courseId, studentId, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Student enrolled successfully"));
+        }
+        catch (UnprocessableEntityException ex)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message, 422));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enrolling student");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error enrolling student"));
+        }
+    }
+
+    /// <summary>
+    /// Get enrolled students for course (Faculty and Admin only)
+    /// GET /api/v1/courses/{courseId}/students
+    /// </summary>
+    [HttpGet("{courseId}/students")]
+    [Authorize(Roles = "Admin,Faculty,DepartmentHead")]
+    [ProducesResponseType(typeof(ApiResponse<List<StudentResponse>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<List<StudentResponse>>>> GetEnrolledStudents(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting enrolled students for course {CourseId}", courseId);
+
+        try
+        {
+            var students = await _courseService.GetEnrolledStudentsAsync(courseId, cancellationToken);
+            return Ok(ApiResponse<List<StudentResponse>>.SuccessResponse(students, "Enrolled students retrieved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving enrolled students");
+            return BadRequest(ApiResponse<object>.ErrorResponse("Error retrieving students"));
+        }
+    }
+
+    /// <summary>
+    /// Get available seats for course (All authenticated users)
+    /// GET /api/v1/courses/{courseId}/available-seats
+    /// </summary>
+    [HttpGet("{courseId}/available-seats")]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<int>>> GetAvailableSeats(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var seats = await _courseService.GetAvailableSeatsAsync(courseId, cancellationToken);
+            return Ok(ApiResponse<int>.SuccessResponse(seats, "Available seats"));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message, 404));
+        }
+    }
+}

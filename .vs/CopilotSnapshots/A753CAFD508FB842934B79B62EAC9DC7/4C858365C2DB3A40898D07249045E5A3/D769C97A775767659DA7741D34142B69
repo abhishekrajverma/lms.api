@@ -1,0 +1,84 @@
+﻿namespace EMS.Infrastructure.Logging;
+
+using Microsoft.Extensions.Configuration;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
+using System.Collections.ObjectModel;
+
+/// <summary>
+/// Serilog logging configuration
+/// Sets up structured logging with file and SQL Server sinks
+/// Provides consistent, queryable logs across the application
+/// </summary>
+public static class LoggingConfiguration
+{
+    /// <summary>
+    /// Configure Serilog for the application
+    /// </summary>
+    public static Logger ConfigureLogging(IConfiguration configuration)
+    {
+        var logPath = Path.Combine(AppContext.BaseDirectory, "logs");
+        Directory.CreateDirectory(logPath);
+
+        var sqlConnectionString = configuration.GetConnectionString("DefaultConnection") 
+            ?? throw new InvalidOperationException("Connection string not found");
+
+        // Define SQL Server column options
+        var columnOptions = new ColumnOptions();
+        columnOptions.Store.Remove(StandardColumn.Properties);
+        columnOptions.Store.Add(StandardColumn.LogEvent);
+
+        var logger = new LoggerConfiguration()
+            // Minimum log level
+            .MinimumLevel.Information()
+            
+            // Override specific namespaces
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            
+            // Console sink (for development)
+            .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+            
+            // File sink (daily rolling)
+            .WriteTo.File(
+                path: Path.Combine(logPath, "ems-api-.txt"),
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                retainedFileCountLimit: 30,
+                fileSizeLimitBytes: 104857600) // 100 MB
+            
+            // SQL Server sink
+            .WriteTo.MSSqlServer(
+                connectionString: sqlConnectionString,
+                sinkOptions: new MSSqlServerSinkOptions
+                {
+                    TableName = "Logs",
+                    SchemaName = "dbo",
+                    AutoCreateSqlTable = true
+                },
+                columnOptions: columnOptions)
+            
+            // Enrichers (add context to logs)
+            .Enrich.FromLogContext()
+            .Enrich.WithMachineName()
+            .Enrich.WithEnvironmentUserName()
+            .Enrich.WithThreadId()
+            .Enrich.WithProperty("Application", "EMS.Api")
+            .Enrich.WithProperty("Environment", GetEnvironment())
+            
+            .CreateLogger();
+
+        return logger;
+    }
+
+    /// <summary>
+    /// Get current environment
+    /// </summary>
+    private static string GetEnvironment()
+    {
+        return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+    }
+}

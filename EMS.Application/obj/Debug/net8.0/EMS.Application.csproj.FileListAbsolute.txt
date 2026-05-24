@@ -1,0 +1,17 @@
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Application.deps.json
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Application.dll
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Application.pdb
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Domain.dll
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Shared.dll
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Domain.pdb
+D:\EMS\Backend\EMS.Application\bin\Debug\net8.0\EMS.Shared.pdb
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.csproj.AssemblyReference.cache
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.AssemblyInfoInputs.cache
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.AssemblyInfo.cs
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.csproj.CoreCompileInputs.cache
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Appl.49CE4691.Up2Date
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.dll
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\refint\EMS.Application.dll
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\EMS.Application.pdb
+D:\EMS\Backend\EMS.Application\obj\Debug\net8.0\ref\EMS.Application.dll
