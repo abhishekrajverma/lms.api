@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/LMS.SharedKernal/LMS.SharedKernal.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LMS.SharedKernal.Tests/LMS.SharedKernal.Tests.csproj" />
+  </Folder>
+</Solution>
