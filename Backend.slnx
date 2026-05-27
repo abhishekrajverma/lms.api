@@ -1,9 +1,17 @@
 <Solution>
-  <Folder Name="/src/" />
-  <Folder Name="/src/BuildingBlocks/">
-    <Project Path="src/BuildingBlocks/LMS.SharedKernal/LMS.SharedKernal.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/LMS.SharedKernal.Tests/LMS.SharedKernal.Tests.csproj" />
-  </Folder>
+  <Project Path="src/BuildingBlocks/LMS.SharedKernal/LMS.SharedKernal.csproj" />
+  <Project Path="src/BuildingBlocks/LMS.EventBus/LMS.EventBus.csproj" />
+  <Project Path="src/Services/LMS.ServiceDefaults/LMS.ServiceDefaults.csproj" />
+  <Project Path="src/Services/Identity/LMS.Identity.API/LMS.Identity.API.csproj" />
+  <Project Path="src/Services/Tenant/LMS.Tenant.API/LMS.Tenant.API.csproj" />
+  <Project Path="src/Services/Student/LMS.Student.API/LMS.Student.API.csproj" />
+  <Project Path="src/Services/Academic/LMS.Academic.API/LMS.Academic.API.csproj" />
+  <Project Path="src/Services/Fee/LMS.Fee.API/LMS.Fee.API.csproj" />
+  <Project Path="src/Services/Notification/LMS.Notification.API/LMS.Notification.API.csproj" />
+  <Project Path="src/ApiGateway/LMS.ApiGateway/LMS.ApiGateway.csproj" />
+  <Project Path="tests/LMS.SharedKernal.Tests/LMS.SharedKernal.Tests.csproj" />
+  <Project Path="tests/LMS.EventBus.Tests/LMS.EventBus.Tests.csproj" />
+  <Project Path="tests/LMS.Student.UnitTests/LMS.Student.UnitTests.csproj" />
+  <Project Path="tests/LMS.Student.IntegrationTests/LMS.Student.IntegrationTests.csproj" />
+  <Project Path="tests/LMS.Architecture.Tests/LMS.Architecture.Tests.csproj" />
 </Solution>

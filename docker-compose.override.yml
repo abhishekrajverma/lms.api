@@ -1,0 +1,30 @@
+services:
+  apigateway:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5000:8080"
+
+  tenant-api:
+    ports:
+      - "5011:8080"
+
+  student-api:
+    ports:
+      - "5012:8080"
+
+  academic-api:
+    ports:
+      - "5013:8080"
+
+  fee-api:
+    ports:
+      - "5014:8080"
+
+  notification-api:
+    ports:
+      - "5015:8080"
+
+  identity-api:
+    ports:
+      - "5010:8080"

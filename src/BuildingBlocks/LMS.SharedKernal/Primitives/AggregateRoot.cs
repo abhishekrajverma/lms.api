@@ -4,6 +4,7 @@ namespace LMS.SharedKernal.Primitives;
 /// Marks the root of a DDD Aggregate.
 /// All state changes to child entities must go through the aggregate root.
 /// Only AggregateRoot types should have a corresponding Repository.
+/// Domain events are raised via <see cref="Entity.RaiseDomainEvent"/> inherited from <see cref="Entity"/>.
 /// </summary>
 public abstract class AggregateRoot : Entity
 {

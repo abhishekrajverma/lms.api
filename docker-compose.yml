@@ -1,0 +1,150 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_Password123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Your_strong_Password123" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:80"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.gateway
+    ports:
+      - "5000:8080"
+    depends_on:
+      - identity-api
+      - tenant-api
+      - student-api
+      - academic-api
+      - fee-api
+      - notification-api
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.identity
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      Keycloak__Authority: http://keycloak:8080/realms/lms
+    depends_on:
+      - keycloak
+
+  tenant-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_PROJECT: src/Services/Tenant/LMS.Tenant.API/LMS.Tenant.API.csproj
+        SERVICE_DLL: LMS.Tenant.API.dll
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=tenant_db;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Max Pool Size=200;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  student-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_PROJECT: src/Services/Student/LMS.Student.API/LMS.Student.API.csproj
+        SERVICE_DLL: LMS.Student.API.dll
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=student_db;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Max Pool Size=200;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  academic-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_PROJECT: src/Services/Academic/LMS.Academic.API/LMS.Academic.API.csproj
+        SERVICE_DLL: LMS.Academic.API.dll
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=academic_db;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Max Pool Size=200;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  fee-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_PROJECT: src/Services/Fee/LMS.Fee.API/LMS.Fee.API.csproj
+        SERVICE_DLL: LMS.Fee.API.dll
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=fee_db;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Max Pool Size=200;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  notification-api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_PROJECT: src/Services/Notification/LMS.Notification.API/LMS.Notification.API.csproj
+        SERVICE_DLL: LMS.Notification.API.dll
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=notification_db;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;Max Pool Size=200;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  sqlserver_data:
