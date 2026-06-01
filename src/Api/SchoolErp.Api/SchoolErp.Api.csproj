@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SchoolErp.Api</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Application\BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Infrastructure\BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\EventBus\SchoolErp.EventBus\SchoolErp.EventBus.csproj" />
+    <ProjectReference Include="..\..\MultiTenancy\SchoolErp.MultiTenancy\SchoolErp.MultiTenancy.csproj" />
+    <ProjectReference Include="..\..\Observability\SchoolErp.Observability\SchoolErp.Observability.csproj" />
+    <ProjectReference Include="..\..\Authorization\SchoolErp.Authorization\SchoolErp.Authorization.csproj" />
+    <ProjectReference Include="..\..\Modules\TenantManagement\TenantManagement.Api\TenantManagement.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\Billing.Api\Billing.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Academics\Academics.Api\Academics.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Students\Students.Api\Students.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Employees\Employees.Api\Employees.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Attendance\Attendance.Api\Attendance.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Examinations\Examinations.Api\Examinations.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Fees\Fees.Api\Fees.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Transport\Transport.Api\Transport.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Communication\Communication.Api\Communication.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Library\Library.Api\Library.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Inventory\Inventory.Api\Inventory.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Audit\Audit.Api\Audit.Api.csproj" />
+  </ItemGroup>
+</Project>
